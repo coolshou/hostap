@@ -11,7 +11,9 @@
 bool ScanResultsItem::operator< (const QTreeWidgetItem &other) const
 {
 	int sortCol = treeWidget()->sortColumn();
-	if (sortCol == 2 || sortCol == 3) {
+//	if (sortCol == 2 || sortCol == 3) {
+//jimmy
+	if (sortCol == 3) {		
 		return text(sortCol).toInt() < other.text(sortCol).toInt();
 	}
 	return text(sortCol) < other.text(sortCol);

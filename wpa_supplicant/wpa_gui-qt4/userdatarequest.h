@@ -10,6 +10,7 @@
 #define USERDATAREQUEST_H
 
 #include <QObject>
+#include <QtGlobal>
 #include "ui_userdatarequest.h"
 
 class WpaGui;
@@ -19,8 +20,13 @@ class UserDataRequest : public QDialog, public Ui::UserDataRequest
 	Q_OBJECT
 
 public:
+#if QT_VERSION >= 0x050000
 	UserDataRequest(QWidget *parent = 0, const char *name = 0,
 			bool modal = false, Qt::WindowFlags fl = 0);
+#else
+	UserDataRequest(QWidget *parent = 0, const char *name = 0,
+			bool modal = false, Qt::WFlags fl = 0);
+#endif
 	~UserDataRequest();
 
 	int setParams(WpaGui *_wpagui, const char *reqMsg);

@@ -10,6 +10,7 @@
 #define SCANRESULTS_H
 
 #include <QObject>
+#include <QtGlobal>
 #include "ui_scanresults.h"
 
 class WpaGui;
@@ -19,8 +20,13 @@ class ScanResults : public QDialog, public Ui::ScanResults
 	Q_OBJECT
 
 public:
+#if QT_VERSION >= 0x050000
 	ScanResults(QWidget *parent = 0, const char *name = 0,
 		    bool modal = false, Qt::WindowFlags fl = 0);
+#else
+	ScanResults(QWidget *parent = 0, const char *name = 0,
+		    bool modal = false, Qt::WFlags fl = 0);
+#endif
 	~ScanResults();
 
 public slots:
@@ -29,6 +35,7 @@ public slots:
 	virtual void scanRequest();
 	virtual void getResults();
 	virtual void bssSelected(QTreeWidgetItem *sel);
+	virtual int  freqToChannel(QString freq);
 
 protected slots:
 	virtual void languageChange();

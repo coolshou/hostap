@@ -14,9 +14,13 @@
 #include "networkconfig.h"
 #include "scanresultsitem.h"
 
-
+#if QT_VERSION >= 0x050000
 ScanResults::ScanResults(QWidget *parent, const char *, bool, Qt::WindowFlags)
 	: QDialog(parent)
+#else
+ScanResults::ScanResults(QWidget *parent, const char *, bool, Qt::WFlags)
+	: QDialog(parent)
+#endif
 {
 	setupUi(this);
 
@@ -27,8 +31,13 @@ ScanResults::ScanResults(QWidget *parent, const char *, bool, Qt::WindowFlags)
 		SLOT(bssSelected(QTreeWidgetItem *)));
 
 	wpagui = NULL;
+#if QT_VERSION >= 0x050000
 	scanResultsWidget->setItemsExpandable(false);
 	scanResultsWidget->setRootIsDecorated(false);
+#else
+	scanResultsWidget->setItemsExpandable(FALSE);
+	scanResultsWidget->setRootIsDecorated(FALSE);
+#endif
 	scanResultsWidget->setItemDelegate(new SignalBar(scanResultsWidget));
 }
 
@@ -56,11 +65,15 @@ void ScanResults::updateResults()
 	char reply[2048];
 	size_t reply_len;
 	int index;
+	bool rs;
+	int i24GNum, i5GNum; //jimmy, record 2.4G, 5g site number
 	char cmd[20];
 
 	scanResultsWidget->clear();
 
 	index = 0;
+	i24GNum =0;
+	i5GNum =0;
 	while (wpagui) {
 		snprintf(cmd, sizeof(cmd), "BSS %d", index++);
 		if (index > 1000)
@@ -86,14 +99,29 @@ void ScanResults::updateResults()
 
 			if ((*it).startsWith("bssid="))
 				bssid = (*it).mid(pos);
-			else if ((*it).startsWith("freq="))
+			else if ((*it).startsWith("freq=")) {
 				freq = (*it).mid(pos);
-			else if ((*it).startsWith("level="))
+				//jimmy
+				if (freq.toInt(&rs, 10) > 5000) {
+					i5GNum++;
+				} else {
+					i24GNum++;
+				}
+				freq = freq + " (" + QString::number(freqToChannel(freq)) + ")";
+			} else if ((*it).startsWith("level="))
 				signal = (*it).mid(pos);
 			else if ((*it).startsWith("flags="))
 				flags = (*it).mid(pos);
-			else if ((*it).startsWith("ssid="))
-				ssid = (*it).mid(pos);
+            else if ((*it).startsWith("ssid=")){
+                //#jimmy, TODO, unicode decode? or fix it on wpa_supplicant?
+                //how to decode UTF-8-encoded string as following
+                // \xe9\x9d\x92\xe8\x8a\xb1\xe7\x93\xb7\xe7\xa0\xb4\xe4\xba\x86
+                // 青花瓷破了
+                ssid = (*it).mid(pos);
+                //QByteArray u8a = ssid.toUtf8();
+                //QString ssidtmp = (*it).mid(pos);
+                //ssid = QString::fromUtf8(u8a);
+            }
 		}
 
 		ScanResultsItem *item = new ScanResultsItem(scanResultsWidget);
@@ -108,9 +136,36 @@ void ScanResults::updateResults()
 		if (bssid.isEmpty())
 			break;
 	}
+	//jimmy
+    lineEdit_BandG->setText(QString::number(i24GNum));
+    lineEdit_BandA->setText(QString::number(i5GNum));
+    lineEdit_Band->setText(QString::number(i5GNum+i24GNum));
 }
-
-
+//jimmy
+//=> freq column value will convert to int to sort!!
+int ScanResults::freqToChannel(QString freq)
+{
+	int iChannel;
+	int ifreq;
+	bool rs;
+	ifreq = freq.toInt(&rs, 10);
+	if (!rs) {
+		return -1;
+	}
+	
+	iChannel = 0;
+    //TODO: 60GHz
+	if (ifreq > 5000) {
+		//channel= (freq - 5150)/5 + 30
+		iChannel = (ifreq-5150)/5 + 30;
+	} else if (ifreq > 2400) {
+		//freq = (channel -1)*5 + 2412
+		//channel= (freq - 2412)/5 + 1
+		iChannel = (ifreq-2412)/5 + 1;
+	}
+	
+	return iChannel;
+}
 void ScanResults::scanRequest()
 {
 	char reply[10];

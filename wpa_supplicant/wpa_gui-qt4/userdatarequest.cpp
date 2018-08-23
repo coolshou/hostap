@@ -10,10 +10,15 @@
 #include "wpagui.h"
 #include "common/wpa_ctrl.h"
 
-
+#if QT_VERSION >= 0x050000
 UserDataRequest::UserDataRequest(QWidget *parent, const char *, bool,
 				 Qt::WindowFlags)
 	: QDialog(parent)
+#else
+UserDataRequest::UserDataRequest(QWidget *parent, const char *, bool,
+				 Qt::WFlags)
+	: QDialog(parent)
+#endif
 {
 	setupUi(this);
 
